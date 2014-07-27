@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 public class LocalhostResourcePool implements ResourcePool {
 
     private Lease localhostLease = new Lease(new LocalhostResource());
-    private Logger log = LoggerFactory.getLogger(LocalhostResource.class);
+    private Logger log = LoggerFactory.getLogger(LocalhostResourcePool.class);
 
     @Override
     public int getPoolSize() {

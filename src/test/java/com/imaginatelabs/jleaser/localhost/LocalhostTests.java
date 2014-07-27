@@ -1,5 +1,6 @@
 package com.imaginatelabs.jleaser.localhost;
 
+import com.imaginatelabs.jleaser.TestUtils;
 import com.imaginatelabs.jleaser.core.InvalidResourceTypeException;
 import com.imaginatelabs.jleaser.core.JLeaser;
 import com.imaginatelabs.jleaser.core.Resource;
@@ -53,7 +54,7 @@ public class LocalhostTests {
 
                 order.add("Holding first lease");
                 blockThread = false;
-                LocalhostTests.sleep(2000);
+                TestUtils.sleep(2000);
                 try {
                     JLeaser.returnLease(localhost);
                 } catch (InvalidResourceTypeException e) {
@@ -66,7 +67,7 @@ public class LocalhostTests {
         Thread secondLease = new Thread(){
             public void run(){
                 while(blockThread){
-                    LocalhostTests.sleep(1000);
+                    TestUtils.sleep(1000);
                 }
                 order.add("Getting second lease");
                 Resource localhost = null;
@@ -103,14 +104,5 @@ public class LocalhostTests {
         Assert.assertEquals(order.get(3),"Returned first lease");
         Assert.assertEquals(order.get(4),"Holding second lease");
         Assert.assertEquals(order.get(5),"Returned second lease");
-    }
-
-    private static void sleep(int milliseconds) {
-        try {
-            Thread.sleep(milliseconds);
-            log.trace("Sleeping");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 }

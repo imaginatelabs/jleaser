@@ -4,6 +4,8 @@ import com.imaginatelabs.jleaser.docker.DockerResource;
 import com.imaginatelabs.jleaser.docker.DockerResourcePool;
 import com.imaginatelabs.jleaser.localhost.LocalhostResource;
 import com.imaginatelabs.jleaser.localhost.LocalhostResourcePool;
+import com.imaginatelabs.jleaser.port.PortResource;
+import com.imaginatelabs.jleaser.port.PortResourcePool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +16,8 @@ public class JLeaser {
 
     public enum ResourceType{
         LOCALHOST(LocalhostResource.class),
-        DOCKER(DockerResource.class);
+        DOCKER(DockerResource.class),
+        PORT(PortResource.class);
 
         Class aClass;
         ResourceType(Class aClass){
@@ -32,22 +35,24 @@ public class JLeaser {
     private Map<ResourceType, ResourcePool> resourceMap = new HashMap<ResourceType, ResourcePool>(){{
         put(ResourceType.LOCALHOST,new LocalhostResourcePool());
         put(ResourceType.DOCKER, new DockerResourcePool());
+        put(ResourceType.PORT, new PortResourcePool());
     }};
 
     private JLeaser() { }
 
-    public static Resource getLease(String resourceType, String resourceConfig, String resourceLeaseInstanceName) throws InvalidResourceTypeException {
+    public static Resource getLeaseOn(String resourceType, String configId) throws InvalidResourceTypeException {
         JLeaser leaser = getInstance();
         ResourceType type = validateResourceType(resourceType);
         leaser.log.debug("ResourceType: "+type);
         ResourcePool resourcePool = singleton.resourceMap.get(type);
         leaser.log.debug("Is ResourcePool null: "+(resourcePool == null));
-        return resourcePool.acquireLeaseForResource(resourceConfig, resourceLeaseInstanceName);
+        return resourcePool.acquireLeaseForResource(configId);
     }
 
     private static JLeaser getInstance() {
         if (singleton == null) {
             singleton = new JLeaser();
+
             singleton.log.debug("Creating singleton");
         }else{
             singleton.log.debug("Using existing singleton");
@@ -56,7 +61,12 @@ public class JLeaser {
     }
 
     public static Resource getLeaseOnLocalHost() throws InvalidResourceTypeException {
-        return getLease("localhost","localhost","localhost");
+        return getLeaseOn(ResourceType.LOCALHOST.toString(), "localhost");
+    }
+
+    public static Resource getLeaseOnPort(String portNumber) throws InvalidResourceTypeException {
+        //TODO handle a request for any available port eg 0
+        return getLeaseOn(ResourceType.PORT.toString(), portNumber);
     }
 
     public static void returnLease(Resource resource) throws InvalidResourceTypeException {

@@ -1,9 +1,9 @@
 package com.imaginatelabs.jleaser.port;
 
+import com.imaginatelabs.jleaser.TestUtils;
 import com.imaginatelabs.jleaser.core.InvalidResourceTypeException;
 import com.imaginatelabs.jleaser.core.JLeaser;
 import com.imaginatelabs.jleaser.core.Resource;
-import com.imaginatelabs.jleaser.localhost.LocalhostResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -16,23 +16,37 @@ import java.util.List;
 public class PortTests {
 
     private static Logger log = LoggerFactory.getLogger(PortTests.class);
+    volatile boolean blockThread = true;
 
     @Test
-    public void shouldCreateLeaseForLocalhostAndThenReturnIt() throws Exception {
-        Resource localhost =  JLeaser.getLeaseOnLocalHost();
+    public void shouldCreateLeaseForSpecificPortsAndThenReturnLease() throws Exception {
+        Resource port =  JLeaser.getLeaseOnPort("3000");
 
-        Assert.assertTrue(localhost instanceof LocalhostResource);
-        Assert.assertTrue(JLeaser.hasLease(localhost));
-        Assert.assertEquals(localhost.getResourceId(), "localhost");
-        Assert.assertEquals(localhost.getIpAddress(), "127.0.0.1");
+        Assert.assertTrue(port instanceof PortResource);
+        Assert.assertTrue(JLeaser.hasLease(port));
+        Assert.assertEquals(port.getResourceId(), "3000");
+        Assert.assertEquals(port.getIpAddress(), "127.0.0.1");
 
-        JLeaser.returnLease(localhost);
+        JLeaser.returnLease(port);
 
-        Assert.assertFalse(JLeaser.hasLease(localhost));
+        Assert.assertFalse(JLeaser.hasLease(port));
     }
 
+    @Test
+    public void shouldRecreateLeaseForSpecificPortsAndThenReturnLease() throws Exception {
+        Resource port0 =  JLeaser.getLeaseOnPort("3000");
+        JLeaser.returnLease(port0);
 
-    volatile boolean blockThread = true;
+        Resource port =  JLeaser.getLeaseOnPort("3000");
+        Assert.assertTrue(port instanceof PortResource);
+        Assert.assertTrue(JLeaser.hasLease(port));
+        Assert.assertEquals(port.getResourceId(), "3000");
+        Assert.assertEquals(port.getIpAddress(), "127.0.0.1");
+
+        JLeaser.returnLease(port);
+
+        Assert.assertFalse(JLeaser.hasLease(port));
+    }
 
     @Test
     public void shouldBlockCreatingALeaseWhenLeaseExists() throws Exception {
@@ -43,19 +57,19 @@ public class PortTests {
 
             public void run(){
                 order.add("Getting first lease");
-                Resource localhost = null;
+                Resource port = null;
 
                 try {
-                    localhost = JLeaser.getLeaseOnLocalHost();
+                    port = JLeaser.getLeaseOnPort("3000");
                 } catch (InvalidResourceTypeException e) {
                     e.printStackTrace();
                 }
 
                 order.add("Holding first lease");
                 blockThread = false;
-                PortTests.sleep(2000);
+                TestUtils.sleep(2000);
                 try {
-                    JLeaser.returnLease(localhost);
+                    JLeaser.returnLease(port);
                 } catch (InvalidResourceTypeException e) {
                     e.printStackTrace();
                 }
@@ -66,20 +80,20 @@ public class PortTests {
         Thread secondLease = new Thread(){
             public void run(){
                 while(blockThread){
-                    PortTests.sleep(1000);
+                    TestUtils.sleep(1000);
                 }
                 order.add("Getting second lease");
-                Resource localhost = null;
+                Resource port = null;
 
                 try {
-                    localhost = JLeaser.getLeaseOnLocalHost();
+                    port = JLeaser.getLeaseOnPort("3000");
                 } catch (InvalidResourceTypeException e) {
                     e.printStackTrace();
                 }
 
                 order.add("Holding second lease");
                 try {
-                    JLeaser.returnLease(localhost);
+                    JLeaser.returnLease(port);
                 } catch (InvalidResourceTypeException e) {
                     e.printStackTrace();
                 }
@@ -105,12 +119,4 @@ public class PortTests {
         Assert.assertEquals(order.get(5),"Returned second lease");
     }
 
-    private static void sleep(int milliseconds) {
-        try {
-            Thread.sleep(milliseconds);
-            log.trace("Sleeping");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 }
