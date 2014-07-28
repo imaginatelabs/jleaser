@@ -5,12 +5,15 @@ import com.imaginatelabs.jleaser.core.ResourcePool;
 
 public class DockerResourcePool implements ResourcePool {
 
-    public DockerResourcePool() {
-
-    }
+    public DockerResourcePool() { }
 
     @Override
     public int getPoolSize() {
+        return 0;
+    }
+
+    @Override
+    public int getPoolLimit() {
         return 0;
     }
 
@@ -30,7 +33,7 @@ public class DockerResourcePool implements ResourcePool {
     }
 
     @Override
-    public boolean checkInOnResourcePool() {
-        return false;
+    public void update() {
+
     }
 }

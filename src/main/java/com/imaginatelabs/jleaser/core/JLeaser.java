@@ -32,7 +32,7 @@ public class JLeaser {
     private static JLeaser singleton = null;
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
-    private Map<ResourceType, ResourcePool> resourceMap = new HashMap<ResourceType, ResourcePool>(){{
+    private Map<ResourceType, ResourcePool> resourcePools = new HashMap<ResourceType, ResourcePool>(){{
         put(ResourceType.LOCALHOST,new LocalhostResourcePool());
         put(ResourceType.DOCKER, new DockerResourcePool());
         put(ResourceType.PORT, new PortResourcePool());
@@ -40,44 +40,43 @@ public class JLeaser {
 
     private JLeaser() { }
 
-    public static Resource getLeaseOn(String resourceType, String configId) throws InvalidResourceTypeException {
+    public static Resource getLeaseOn(String resourceType, String configId) throws JLeaserException{
         JLeaser leaser = getInstance();
         ResourceType type = validateResourceType(resourceType);
         leaser.log.debug("ResourceType: "+type);
-        ResourcePool resourcePool = singleton.resourceMap.get(type);
+        ResourcePool resourcePool = singleton.resourcePools.get(type);
         leaser.log.debug("Is ResourcePool null: "+(resourcePool == null));
         return resourcePool.acquireLeaseForResource(configId);
     }
 
-    private static JLeaser getInstance() {
+    private static JLeaser getInstance() throws JLeaserException {
         if (singleton == null) {
             singleton = new JLeaser();
-
             singleton.log.debug("Creating singleton");
         }else{
             singleton.log.debug("Using existing singleton");
         }
+        singleton.update();
         return singleton;
     }
 
-    public static Resource getLeaseOnLocalHost() throws InvalidResourceTypeException {
+    public static Resource getLeaseOnLocalHost() throws JLeaserException{
         return getLeaseOn(ResourceType.LOCALHOST.toString(), "localhost");
     }
 
-    public static Resource getLeaseOnPort(String portNumber) throws InvalidResourceTypeException {
-        //TODO handle a request for any available port eg 0
+    public static Resource getLeaseOnPort(String portNumber) throws JLeaserException {
         return getLeaseOn(ResourceType.PORT.toString(), portNumber);
     }
 
-    public static void returnLease(Resource resource) throws InvalidResourceTypeException {
+    public static void returnLease(Resource resource) throws JLeaserException {
         JLeaser leaser = getInstance();
-        ResourcePool resourcePool = leaser.resourceMap.get(getResourceTypeFromInstanceOf(resource.getClass()));
+        ResourcePool resourcePool = leaser.resourcePools.get(getResourceTypeFromInstanceOf(resource.getClass()));
         resourcePool.returnLeaseForResource(resource);
     }
 
-    public static boolean hasLease(Resource resource) throws InvalidResourceTypeException {
+    public static boolean hasLease(Resource resource) throws JLeaserException {
         JLeaser leaser = getInstance();
-        ResourcePool resourcePool = leaser.resourceMap.get(getResourceTypeFromInstanceOf(resource.getClass()));
+        ResourcePool resourcePool = leaser.resourcePools.get(getResourceTypeFromInstanceOf(resource.getClass()));
         return resourcePool.hasLeaseOnResource(resource);
     }
 
@@ -99,5 +98,9 @@ public class JLeaser {
         throw new InvalidResourceTypeException(aClass.toString());
     }
 
-
+    private void update() throws ResourcePoolException {
+        for(ResourcePool resourcePool : resourcePools.values()){
+            resourcePool.update();
+        }
+    }
 }

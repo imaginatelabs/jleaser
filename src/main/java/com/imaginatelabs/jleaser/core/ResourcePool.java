@@ -3,11 +3,13 @@ package com.imaginatelabs.jleaser.core;
 public interface ResourcePool {
     int getPoolSize();
 
-    Resource acquireLeaseForResource(String configId);
+    int getPoolLimit();
 
-    void returnLeaseForResource(Resource resource);
+    Resource acquireLeaseForResource(String configId) throws ResourcePoolException;
 
-    boolean hasLeaseOnResource(Resource resource);
+    void returnLeaseForResource(Resource resource) throws ResourcePoolException;;
 
-    boolean checkInOnResourcePool();
+    boolean hasLeaseOnResource(Resource resource) throws ResourcePoolException;;
+
+    void update() throws ResourcePoolException;;
 }

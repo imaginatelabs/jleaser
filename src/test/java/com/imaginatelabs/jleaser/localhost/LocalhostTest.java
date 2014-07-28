@@ -3,8 +3,8 @@ package com.imaginatelabs.jleaser.localhost;
 import com.imaginatelabs.jleaser.TestUtils;
 import com.imaginatelabs.jleaser.core.InvalidResourceTypeException;
 import com.imaginatelabs.jleaser.core.JLeaser;
+import com.imaginatelabs.jleaser.core.JLeaserException;
 import com.imaginatelabs.jleaser.core.Resource;
-import com.imaginatelabs.jleaser.docker.DockerResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -14,9 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class LocalhostTests {
+public class LocalhostTest {
 
-    private static Logger log = LoggerFactory.getLogger(LocalhostTests.class);
+    private static Logger log = LoggerFactory.getLogger(LocalhostTest.class);
 
     @Test
     public void shouldCreateLeaseForLocalhostAndThenReturnIt() throws Exception {
@@ -48,7 +48,7 @@ public class LocalhostTests {
 
                 try {
                     localhost = JLeaser.getLeaseOnLocalHost();
-                } catch (InvalidResourceTypeException e) {
+                } catch (JLeaserException e) {
                     e.printStackTrace();
                 }
 
@@ -57,7 +57,7 @@ public class LocalhostTests {
                 TestUtils.sleep(2000);
                 try {
                     JLeaser.returnLease(localhost);
-                } catch (InvalidResourceTypeException e) {
+                } catch (JLeaserException e) {
                     e.printStackTrace();
                 }
                 order.add("Returned first lease");
@@ -74,14 +74,14 @@ public class LocalhostTests {
 
                 try {
                     localhost = JLeaser.getLeaseOnLocalHost();
-                } catch (InvalidResourceTypeException e) {
+                } catch (JLeaserException e) {
                     e.printStackTrace();
                 }
 
                 order.add("Holding second lease");
                 try {
                     JLeaser.returnLease(localhost);
-                } catch (InvalidResourceTypeException e) {
+                } catch (JLeaserException e) {
                     e.printStackTrace();
                 }
                 order.add("Returned second lease");

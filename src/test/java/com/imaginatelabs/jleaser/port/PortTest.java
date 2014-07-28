@@ -3,6 +3,7 @@ package com.imaginatelabs.jleaser.port;
 import com.imaginatelabs.jleaser.TestUtils;
 import com.imaginatelabs.jleaser.core.InvalidResourceTypeException;
 import com.imaginatelabs.jleaser.core.JLeaser;
+import com.imaginatelabs.jleaser.core.JLeaserException;
 import com.imaginatelabs.jleaser.core.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,11 +12,12 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 
-public class PortTests {
+public class PortTest {
 
-    private static Logger log = LoggerFactory.getLogger(PortTests.class);
+    private static Logger log = LoggerFactory.getLogger(PortTest.class);
     volatile boolean blockThread = true;
 
     @Test
@@ -61,7 +63,7 @@ public class PortTests {
 
                 try {
                     port = JLeaser.getLeaseOnPort("3000");
-                } catch (InvalidResourceTypeException e) {
+                } catch (JLeaserException e) {
                     e.printStackTrace();
                 }
 
@@ -70,7 +72,7 @@ public class PortTests {
                 TestUtils.sleep(2000);
                 try {
                     JLeaser.returnLease(port);
-                } catch (InvalidResourceTypeException e) {
+                } catch (JLeaserException e) {
                     e.printStackTrace();
                 }
                 order.add("Returned first lease");
@@ -87,14 +89,14 @@ public class PortTests {
 
                 try {
                     port = JLeaser.getLeaseOnPort("3000");
-                } catch (InvalidResourceTypeException e) {
+                } catch (JLeaserException e) {
                     e.printStackTrace();
                 }
 
                 order.add("Holding second lease");
                 try {
                     JLeaser.returnLease(port);
-                } catch (InvalidResourceTypeException e) {
+                } catch (JLeaserException e) {
                     e.printStackTrace();
                 }
                 order.add("Returned second lease");
@@ -119,4 +121,67 @@ public class PortTests {
         Assert.assertEquals(order.get(5),"Returned second lease");
     }
 
+    @Test
+    public void shouldHavePreAllocatedPorts() throws Exception {
+        PortResourcePool portResourcePool = new PortResourcePool();
+        portResourcePool.update();
+        log.debug("Resource Port Count {} out of {}",portResourcePool.getPoolSize(),portResourcePool.getPoolLimit());
+        Assert.assertTrue((portResourcePool.getPoolLimit() - portResourcePool.getPoolSize()) > 0);
+    }
+
+    @Test
+    public void shouldGetFirstLeaseFromDynamicPortRangeWithAnyPortArg() throws Exception {
+        Resource portResource = JLeaser.getLeaseOnPort("*");
+        int port = Integer.parseInt(portResource.getResourceId());
+
+        Assert.assertEquals(port,49152);
+    }
+
+    @Test
+    public void shouldGetSecondLeaseFromDynamicPortRangeWithAnyPortArg() throws Exception {
+        Resource portResource1 = JLeaser.getLeaseOnPort("*");
+        Resource portResource2 = JLeaser.getLeaseOnPort("*");
+        int port1 = Integer.parseInt(portResource1.getResourceId());
+        int port2 = Integer.parseInt(portResource2.getResourceId());
+
+        Assert.assertEquals(port1,49152);
+        Assert.assertEquals(port2,49153);
+    }
+
+    @Test
+    public void shouldReuseFirstLeaseFromDynamicPortRangeWithAnyPortArg() throws Exception {
+        Resource portResource1 = JLeaser.getLeaseOnPort("*");
+        int port1 = Integer.parseInt(portResource1.getResourceId());
+        Assert.assertEquals(port1,49152);
+        JLeaser.returnLease(portResource1);
+
+        Resource portResource2 = JLeaser.getLeaseOnPort("*");
+        int port2 = Integer.parseInt(portResource2.getResourceId());
+        Assert.assertEquals(port2,49152);
+    }
+
+    @Test
+    public void shouldTestRandom() throws Exception {
+        List<Integer> excludeRows = new ArrayList<Integer>(){{
+            add(10);
+            add(11);
+            add(12);
+            add(13);
+            add(15);
+        }};
+        Random rand = new Random();
+
+        int start = 10;
+        int end = 15;
+        int range = end - start + 1;
+        log.debug("\nStart {} \nEnd {} \nRange {}",start,end,range);
+        int random;
+        do{
+            random = start + rand.nextInt(range);
+            log.debug("Random: {}",random);
+        }while(excludeRows.contains(random));
+
+        log.debug("Random Number is between {} and {}", start,end);
+        Assert.assertEquals(random,14);
+    }
 }

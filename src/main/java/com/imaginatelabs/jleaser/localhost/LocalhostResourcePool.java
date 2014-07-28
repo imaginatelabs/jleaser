@@ -13,6 +13,11 @@ public class LocalhostResourcePool implements ResourcePool {
 
     @Override
     public int getPoolSize() {
+        return localhostLease.hasLease()? 1: 0;
+    }
+
+    @Override
+    public int getPoolLimit() {
         return 1;
     }
 
@@ -42,7 +47,7 @@ public class LocalhostResourcePool implements ResourcePool {
     }
 
     @Override
-    public boolean checkInOnResourcePool() {
-        return true;
+    public void update() {
+
     }
 }
