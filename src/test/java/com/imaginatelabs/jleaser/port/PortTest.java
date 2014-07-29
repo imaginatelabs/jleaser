@@ -130,14 +130,6 @@ public class PortTest {
     }
 
     @Test
-    public void shouldGetFirstLeaseFromDynamicPortRangeWithAnyPortArg() throws Exception {
-        Resource portResource = JLeaser.getLeaseOnPort("*");
-        int port = Integer.parseInt(portResource.getResourceId());
-
-        Assert.assertEquals(port,49152);
-    }
-
-    @Test
     public void shouldGetSecondLeaseFromDynamicPortRangeWithAnyPortArg() throws Exception {
         Resource portResource1 = JLeaser.getLeaseOnPort("*");
         Resource portResource2 = JLeaser.getLeaseOnPort("*");
@@ -146,6 +138,9 @@ public class PortTest {
 
         Assert.assertEquals(port1,49152);
         Assert.assertEquals(port2,49153);
+
+        JLeaser.returnLease(portResource1);
+        JLeaser.returnLease(portResource2);
     }
 
     @Test
@@ -157,31 +152,122 @@ public class PortTest {
 
         Resource portResource2 = JLeaser.getLeaseOnPort("*");
         int port2 = Integer.parseInt(portResource2.getResourceId());
+        JLeaser.returnLease(portResource2);
         Assert.assertEquals(port2,49152);
     }
 
     @Test
-    public void shouldTestRandom() throws Exception {
-        List<Integer> excludeRows = new ArrayList<Integer>(){{
-            add(10);
-            add(11);
-            add(12);
-            add(13);
-            add(15);
-        }};
-        Random rand = new Random();
+    public void shouldGetFirstLeaseFromDynamicPortRangeWithAnyPortArg() throws Exception {
+        Resource portResource1 = JLeaser.getLeaseOnPort("*");
+        int port1 = Integer.parseInt(portResource1.getResourceId());
+        Assert.assertEquals(port1,49152);
+        JLeaser.returnLease(portResource1);
 
-        int start = 10;
-        int end = 15;
-        int range = end - start + 1;
-        log.debug("\nStart {} \nEnd {} \nRange {}",start,end,range);
-        int random;
-        do{
-            random = start + rand.nextInt(range);
-            log.debug("Random: {}",random);
-        }while(excludeRows.contains(random));
-
-        log.debug("Random Number is between {} and {}", start,end);
-        Assert.assertEquals(random,14);
+        Resource portResource2 = JLeaser.getLeaseOnPort("*");
+        int port2 = Integer.parseInt(portResource2.getResourceId());
+        Assert.assertEquals(port2,49152);
+        JLeaser.returnLease(portResource2);
     }
+
+    @Test
+    public void shouldGetFirstLeaseFromSpecifiedPortRange() throws Exception {
+        Resource portResource = JLeaser.getLeaseOnPort("50000-50005");
+        int port = Integer.parseInt(portResource.getResourceId());
+
+        Assert.assertEquals(port,50000);
+        JLeaser.returnLease(portResource);
+    }
+
+    @Test
+    public void shouldGetSecondLeaseFromSpecifiedPortRange() throws Exception {
+        String portRange = "50000-50005";
+        Resource portResource1 = JLeaser.getLeaseOnPort(portRange);
+        Assert.assertEquals(Integer.parseInt(portResource1.getResourceId()),50000);
+
+        Resource portResource2 = JLeaser.getLeaseOnPort(portRange);
+        Assert.assertEquals(Integer.parseInt(portResource2.getResourceId()),50001);
+
+        JLeaser.returnLease(portResource1);
+        JLeaser.returnLease(portResource2);
+    }
+
+    @Test
+    public void shouldReuseFirstLeaseFromSpecifiedPortRange() throws Exception {
+        String portRange = "50000-50005";
+        Resource portResource1 = JLeaser.getLeaseOnPort(portRange);
+        Assert.assertEquals(Integer.parseInt(portResource1.getResourceId()), 50000);
+        JLeaser.returnLease(portResource1);
+
+        Resource portResource2 = JLeaser.getLeaseOnPort(portRange);
+        Assert.assertEquals(Integer.parseInt(portResource2.getResourceId()), 50000);
+        JLeaser.returnLease(portResource2);
+    }
+
+    //Test Exception Cases
+    @Test
+    public void shouldThrowExceptionWhenAlphaNumericStringIsEntered() {
+        try {
+            String invalidPortNumber = "5000a";
+            JLeaser.getLeaseOnPort(invalidPortNumber);
+            Assert.fail(String.format("Port number %s should not be possible",invalidPortNumber));
+        } catch (JLeaserException e) {
+            Assert.assertEquals(e.getMessage(), "Port '5000a' is not a valid port string");
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenNegativePortNumberIsEntered() {
+        try {
+            String invalidPortNumber = "-5000";
+            JLeaser.getLeaseOnPort(invalidPortNumber);
+            Assert.fail(String.format("Port number %s should not be possible",invalidPortNumber));
+        } catch (JLeaserException e) {
+            Assert.assertEquals(e.getMessage(), "Port '-5000' is not a valid port string");
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenAnInvalidBackwardsRangeIsEntered() {
+        try {
+            String invalidPortNumber = "6000-5000";
+            JLeaser.getLeaseOnPort(invalidPortNumber);
+            Assert.fail(String.format("Port range %s should not be possible",invalidPortNumber));
+        } catch (JLeaserException e) {
+            Assert.assertEquals(e.getMessage(), "Port range is invalid 6000-5000 - range floor 6000 is larger than range ceiling 6000");
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenAnInvalidOutOfBoundRangeIsEntered() {
+        try {
+            String invalidPortNumber = "60000-90000";
+            JLeaser.getLeaseOnPort(invalidPortNumber);
+            Assert.fail(String.format("Port range %s should not be possible",invalidPortNumber));
+        } catch (JLeaserException e) {
+            Assert.assertEquals(e.getMessage(), "Port 90000 does not fall between 1 and 65536");
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenFiveDigitPortIsOutOfPortRange() {
+        try {
+            String invalidPortNumber = "90000";
+            JLeaser.getLeaseOnPort(invalidPortNumber);
+            Assert.fail(String.format("Port range %s should not be possible",invalidPortNumber));
+        } catch (JLeaserException e) {
+            Assert.assertEquals(e.getMessage(), "Port 90000 does not fall between 1 and 65536");
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenSixDigitPortIsOutOfPortRange() {
+        try {
+            String invalidPortNumber = "900000";
+            JLeaser.getLeaseOnPort(invalidPortNumber);
+            Assert.fail(String.format("Port range %s should not be possible",invalidPortNumber));
+        } catch (JLeaserException e) {
+            Assert.assertEquals(e.getMessage(), "Port 900000 does not fall between 1 and 65536");
+        }
+    }
+
 }

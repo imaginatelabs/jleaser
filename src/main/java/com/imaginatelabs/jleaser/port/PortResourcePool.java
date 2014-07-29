@@ -59,27 +59,48 @@ public class PortResourcePool implements ResourcePool {
     }
 
     private String parsePort(String configId) throws PortRangeOutOdBoundsException, PortNumberParseException {
-        if (configId.matches("\\*")) {
-            return getDynamicPort();
-        }
-
         try {
-            int portInt = Integer.parseInt(configId);
-            if (!(portInt > PORT_LIMIT_FLOOR && portInt < PORT_LIMIT_CEILING)) {
-                throw new PortRangeOutOdBoundsException(
-                        "Port %d does not fall between %d and %d",
-                        portInt,
-                        PORT_LIMIT_FLOOR,
-                        PORT_LIMIT_CEILING);
+            if (configId.matches("\\*")) {
+                return getDynamicPort(DYNAMIC_PORT_LIMIT_FLOOR,DYNAMIC_PORT_LIMIT_CEILING);
+            } else if (configId.matches("\\d{1,5}-\\d{1,5}")){
+                String[] range = configId.split("-");
+
+                int floor = Integer.parseInt(range[0]);
+                int ceiling = Integer.parseInt(range[1]);
+
+                validatePortWithinRange(floor);
+                validatePortWithinRange(ceiling);
+
+                if(floor > ceiling){
+                    throw new PortRangeOutOdBoundsException(
+                            "Port range is invalid %s - range floor %d is larger than range ceiling %d",
+                            configId,
+                            floor,
+                            floor
+                    );
+                }
+                return getDynamicPort(floor,ceiling);
+
+            } else if(configId.matches("\\d*")) {
+                validatePortWithinRange(Integer.parseInt(configId));
+                return configId;
             }
-        } catch (NumberFormatException e) {
-            throw new PortNumberParseException("Port %s is not a valid port string", configId);
-        }
-        return configId;
+        } catch (NumberFormatException e) { }
+        throw new PortNumberParseException("Port '%s' is not a valid port string", configId);
     }
 
-    private String getDynamicPort() {
-        for (int dynamicPort = DYNAMIC_PORT_LIMIT_FLOOR; dynamicPort < DYNAMIC_PORT_LIMIT_CEILING; ++dynamicPort) {
+    private void validatePortWithinRange(int port) throws PortRangeOutOdBoundsException {
+        if (!(port > PORT_LIMIT_FLOOR && port < PORT_LIMIT_CEILING)) {
+            throw new PortRangeOutOdBoundsException(
+                    "Port %d does not fall between %d and %d",
+                    port,
+                    PORT_LIMIT_FLOOR,
+                    PORT_LIMIT_CEILING);
+        }
+    }
+
+    private String getDynamicPort(int floor, int ceiling) {
+        for (int dynamicPort = floor; dynamicPort <= ceiling ; ++dynamicPort) {
             String portStr = Integer.toString(dynamicPort);
             //Try to reuse a previously leased port
             if (pool.containsKey(portStr)) {
