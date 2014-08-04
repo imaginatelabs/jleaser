@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 public class TestUtils {
 
+    public static final String INTEGRATION = "integration";
     private static Logger log = LoggerFactory.getLogger(TestUtils.class);
 
     public static void sleep(int milliseconds) {
@@ -15,4 +16,6 @@ public class TestUtils {
             e.printStackTrace();
         }
     }
+
+
 }

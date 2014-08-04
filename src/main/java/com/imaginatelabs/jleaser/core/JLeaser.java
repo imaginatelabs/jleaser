@@ -6,13 +6,17 @@ import com.imaginatelabs.jleaser.localhost.LocalhostResource;
 import com.imaginatelabs.jleaser.localhost.LocalhostResourcePool;
 import com.imaginatelabs.jleaser.port.PortResource;
 import com.imaginatelabs.jleaser.port.PortResourcePool;
+import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class JLeaser {
+
+    private JLeaserConfiguration config;
 
     public enum ResourceType{
         LOCALHOST(LocalhostResource.class),
@@ -31,14 +35,37 @@ public class JLeaser {
 
     private static JLeaser singleton = null;
 
-    private Logger log = LoggerFactory.getLogger(this.getClass());
+    private Logger log;
+
     private Map<ResourceType, ResourcePool> resourcePools = new HashMap<ResourceType, ResourcePool>(){{
         put(ResourceType.LOCALHOST,new LocalhostResourcePool());
         put(ResourceType.DOCKER, new DockerResourcePool());
         put(ResourceType.PORT, new PortResourcePool());
     }};
 
-    private JLeaser() { }
+    private JLeaser() throws JLeaserException { }
+
+    private static JLeaser getInstance() throws JLeaserException {
+        try {
+            if (singleton == null) {
+                singleton = new JLeaser();
+                singleton.initializeConfiguration();
+
+            } else {
+
+            }
+            singleton.update();
+            return singleton;
+        } catch (ConfigurationException e) {
+            throw new JLeaserException(e);
+        }
+    }
+
+    private void initializeConfiguration() throws ConfigurationException {
+        config = new JLeaserConfiguration("jleaser.config");
+        log = LoggerFactory.getLogger(this.getClass());
+
+    }
 
     public static Resource getLeaseOn(String resourceType, String configId) throws JLeaserException{
         JLeaser leaser = getInstance();
@@ -47,17 +74,6 @@ public class JLeaser {
         ResourcePool resourcePool = singleton.resourcePools.get(type);
         leaser.log.debug("Is ResourcePool null: "+(resourcePool == null));
         return resourcePool.acquireLeaseForResource(configId);
-    }
-
-    private static JLeaser getInstance() throws JLeaserException {
-        if (singleton == null) {
-            singleton = new JLeaser();
-            singleton.log.debug("Creating singleton");
-        }else{
-            singleton.log.debug("Using existing singleton");
-        }
-        singleton.update();
-        return singleton;
     }
 
     public static Resource getLeaseOnLocalHost() throws JLeaserException{
