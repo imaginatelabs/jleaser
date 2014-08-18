@@ -14,9 +14,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.17</version>
+                <!-- Check this out for testing isolation -->
+                <!-- http://maven.apache.org/surefire/maven-surefire-plugin/examples/fork-options-and-parallel-execution.html -->
                 <configuration>
-                    <parallel>classes</parallel>
+                    <parallel>methods</parallel>
+                    <excludedGroups>nonThreadSafe</excludedGroups>
                 </configuration>
+
             </plugin>
         </plugins>
     </build>

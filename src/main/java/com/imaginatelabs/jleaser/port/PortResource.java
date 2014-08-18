@@ -4,16 +4,9 @@ import com.imaginatelabs.jleaser.core.Resource;
 
 public class PortResource implements Resource {
     private String port;
-    private boolean preAllocated;
 
     public PortResource(String port) {
         this.port = port;
-        this.preAllocated = false;
-    }
-
-    public PortResource(String port, boolean preAllocated) {
-        this.port = port;
-        this.preAllocated = preAllocated;
     }
 
     @Override
@@ -36,7 +29,4 @@ public class PortResource implements Resource {
         return port;
     }
 
-    public boolean isPreAllocated() {
-        return preAllocated;
-    }
 }

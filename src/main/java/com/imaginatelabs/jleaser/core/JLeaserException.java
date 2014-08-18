@@ -7,7 +7,7 @@ public class JLeaserException extends Exception{
         super(String.format(message,args));
     }
 
-    public JLeaserException(ConfigurationException e) {
+    public JLeaserException(Exception e) {
         super(e);
     }
 }

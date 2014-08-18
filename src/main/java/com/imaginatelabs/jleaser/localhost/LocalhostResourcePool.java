@@ -24,14 +24,14 @@ public class LocalhostResourcePool implements ResourcePool {
     @Override
     public Resource acquireLeaseForResource(String configId) {
         while (localhostLease.hasLease()) {
-            log.debug("Waiting for lease on localhost");
+            log.info("Waiting for lease on localhost");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 log.error(e.getMessage());
             }
         }
-        log.debug("Localhost is free taking lease");
+        log.info("Localhost is free taking lease");
         localhostLease.takeLease();
         return localhostLease.getResource();
     }

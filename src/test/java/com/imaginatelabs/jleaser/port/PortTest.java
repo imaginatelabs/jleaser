@@ -1,10 +1,9 @@
 package com.imaginatelabs.jleaser.port;
 
 import com.imaginatelabs.jleaser.TestUtils;
-import com.imaginatelabs.jleaser.core.InvalidResourceTypeException;
-import com.imaginatelabs.jleaser.core.JLeaser;
-import com.imaginatelabs.jleaser.core.JLeaserException;
-import com.imaginatelabs.jleaser.core.Resource;
+import com.imaginatelabs.jleaser.core.*;
+import mockit.Mocked;
+import mockit.NonStrictExpectations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -12,7 +11,6 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 
 public class PortTest {
@@ -123,7 +121,8 @@ public class PortTest {
 
     @Test
     public void shouldHavePreAllocatedPorts() throws Exception {
-        PortResourcePool portResourcePool = new PortResourcePool();
+        //TODO Mock Config File
+        PortResourcePool portResourcePool = new PortResourcePool(new JLeaserConfiguration("config/jleaser.config"));
         portResourcePool.update();
         log.debug("Resource Port Count {} out of {}",portResourcePool.getPoolSize(),portResourcePool.getPoolLimit());
         Assert.assertTrue((portResourcePool.getPoolLimit() - portResourcePool.getPoolSize()) > 0);
@@ -233,7 +232,7 @@ public class PortTest {
             JLeaser.getLeaseOnPort(invalidPortNumber);
             Assert.fail(String.format("Port range %s should not be possible",invalidPortNumber));
         } catch (JLeaserException e) {
-            Assert.assertEquals(e.getMessage(), "Port range is invalid 6000-5000 - range floor 6000 is larger than range ceiling 6000");
+            Assert.assertEquals(e.getMessage(), "Port range is invalid 6000-5000 - range floor 6000 is larger than range ceiling 5000");
         }
     }
 
@@ -269,5 +268,4 @@ public class PortTest {
             Assert.assertEquals(e.getMessage(), "Port 900000 does not fall between 1 and 65536");
         }
     }
-
 }

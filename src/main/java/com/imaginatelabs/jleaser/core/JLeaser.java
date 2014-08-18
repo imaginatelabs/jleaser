@@ -4,6 +4,8 @@ import com.imaginatelabs.jleaser.docker.DockerResource;
 import com.imaginatelabs.jleaser.docker.DockerResourcePool;
 import com.imaginatelabs.jleaser.localhost.LocalhostResource;
 import com.imaginatelabs.jleaser.localhost.LocalhostResourcePool;
+import com.imaginatelabs.jleaser.port.PortNumberParseException;
+import com.imaginatelabs.jleaser.port.PortRangeOutOdBoundsException;
 import com.imaginatelabs.jleaser.port.PortResource;
 import com.imaginatelabs.jleaser.port.PortResourcePool;
 import org.apache.commons.configuration.ConfigurationException;
@@ -13,110 +15,92 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class JLeaser {
 
-    private JLeaserConfiguration config;
-
-    public enum ResourceType{
-        LOCALHOST(LocalhostResource.class),
-        DOCKER(DockerResource.class),
-        PORT(PortResource.class);
-
-        Class aClass;
-        ResourceType(Class aClass){
-            this.aClass = aClass;
-        }
-
-        boolean instanceOfClass(Class aClass){
-            return this.aClass == aClass;
-        }
-    }
-
     private static JLeaser singleton = null;
 
-    private Logger log;
-
-    private Map<ResourceType, ResourcePool> resourcePools = new HashMap<ResourceType, ResourcePool>(){{
-        put(ResourceType.LOCALHOST,new LocalhostResourcePool());
-        put(ResourceType.DOCKER, new DockerResourcePool());
-        put(ResourceType.PORT, new PortResourcePool());
-    }};
-
-    private JLeaser() throws JLeaserException { }
+    private Logger log = LoggerFactory.getLogger(this.getClass());
+    private JLeaserConfiguration config;
+    private HashMap<Class, ResourcePool> resourcePools;
 
     private static JLeaser getInstance() throws JLeaserException {
         try {
             if (singleton == null) {
                 singleton = new JLeaser();
+                singleton.log.trace("Initialising {} singleton ", singleton.getClass().getSimpleName());
                 singleton.initializeConfiguration();
-
-            } else {
-
+            }else{
+                singleton.log.trace("Using existing {} singleton", singleton.getClass().getSimpleName());
             }
             singleton.update();
             return singleton;
-        } catch (ConfigurationException e) {
+        } catch (Exception e) {
             throw new JLeaserException(e);
         }
     }
 
-    private void initializeConfiguration() throws ConfigurationException {
+    private void initializeConfiguration() throws ConfigurationException, PortNumberParseException, PortRangeOutOdBoundsException {
+        log.trace("Initialising Jleaser configuration");
         config = new JLeaserConfiguration("jleaser.config");
-        log = LoggerFactory.getLogger(this.getClass());
-
+        resourcePools = new HashMap<Class, ResourcePool>(){{
+            put(LocalhostResource.class,new LocalhostResourcePool());
+            put(DockerResource.class, new DockerResourcePool());
+            put(PortResource.class, new PortResourcePool(config));
+        }};
     }
 
-    public static Resource getLeaseOn(String resourceType, String configId) throws JLeaserException{
-        JLeaser leaser = getInstance();
-        ResourceType type = validateResourceType(resourceType);
-        leaser.log.debug("ResourceType: "+type);
-        ResourcePool resourcePool = singleton.resourcePools.get(type);
-        leaser.log.debug("Is ResourcePool null: "+(resourcePool == null));
-        return resourcePool.acquireLeaseForResource(configId);
+    private void update() throws ResourcePoolException {
+        log.trace("Updating resource pools");
+        for(ResourcePool resourcePool : resourcePools.values()){
+            log.trace("Updating resource pool: {}", resourcePool.getClass().getSimpleName());
+            resourcePool.update();
+        }
     }
 
-    public static Resource getLeaseOnLocalHost() throws JLeaserException{
-        return getLeaseOn(ResourceType.LOCALHOST.toString(), "localhost");
-    }
-
-    public static Resource getLeaseOnPort(String portNumber) throws JLeaserException {
-        return getLeaseOn(ResourceType.PORT.toString(), portNumber);
-    }
-
-    public static void returnLease(Resource resource) throws JLeaserException {
-        JLeaser leaser = getInstance();
-        ResourcePool resourcePool = leaser.resourcePools.get(getResourceTypeFromInstanceOf(resource.getClass()));
-        resourcePool.returnLeaseForResource(resource);
-    }
-
-    public static boolean hasLease(Resource resource) throws JLeaserException {
-        JLeaser leaser = getInstance();
-        ResourcePool resourcePool = leaser.resourcePools.get(getResourceTypeFromInstanceOf(resource.getClass()));
-        return resourcePool.hasLeaseOnResource(resource);
-    }
-
-    private static ResourceType validateResourceType(String resourceType) throws InvalidResourceTypeException {
-        for(ResourceType type : ResourceType.values()){
-            if(resourceType.equalsIgnoreCase(type.toString())){
-                return type;
+    private ResourcePool getResourcePool(String resourceType) throws JLeaserException {
+        for(Class aClass : resourcePools.keySet()){
+            if(aClass.getSimpleName().equalsIgnoreCase(resourceType + "Resource")){
+                return this.resourcePools.get(aClass);
             }
         }
         throw new InvalidResourceTypeException(resourceType);
     }
 
-    private static ResourceType getResourceTypeFromInstanceOf(Class aClass) throws InvalidResourceTypeException {
-        for(ResourceType type: ResourceType.values()){
-            if(type.instanceOfClass(aClass)){
-                return type;
-            }
+    private static ResourcePool getResourcePool(Class<? extends Resource> aClass) throws JLeaserException {
+        JLeaser leaser = getInstance();
+        if(!leaser.resourcePools.containsKey(aClass)){
+            throw new InvalidResourceTypeException(aClass);
         }
-        throw new InvalidResourceTypeException(aClass.toString());
+        return leaser.resourcePools.get(aClass);
     }
 
-    private void update() throws ResourcePoolException {
-        for(ResourcePool resourcePool : resourcePools.values()){
-            resourcePool.update();
-        }
+    public static Resource getLeaseOn(String resourceType, String configId) throws JLeaserException{
+        JLeaser leaser = getInstance();
+        leaser.log.trace("Getting leaser on ResourceType: {}", resourceType);
+        ResourcePool resourcePool = leaser.getResourcePool(resourceType);
+        leaser.log.trace("Acquired ResourcePool: {}", resourcePool.getClass());
+        return resourcePool.acquireLeaseForResource(configId);
+    }
+
+    public static Resource getLeaseOnLocalHost() throws JLeaserException{
+        return getLeaseOn("localhost", "localhost");
+    }
+
+    public static Resource getLeaseOnPort(String portNumber) throws JLeaserException {
+        return getLeaseOn("port", portNumber);
+    }
+
+    public static void returnLease(Resource resource) throws JLeaserException {
+        getResourcePool(resource.getClass()).returnLeaseForResource(resource);
+    }
+
+    public static boolean hasLease(Resource resource) throws JLeaserException {
+        return getResourcePool(resource.getClass()).hasLeaseOnResource(resource);
+    }
+
+    public static void destroyJleaser(){
+        singleton = null;
     }
 }

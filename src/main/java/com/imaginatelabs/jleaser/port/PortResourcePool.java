@@ -1,9 +1,6 @@
 package com.imaginatelabs.jleaser.port;
 
-import com.imaginatelabs.jleaser.core.Lease;
-import com.imaginatelabs.jleaser.core.Resource;
-import com.imaginatelabs.jleaser.core.ResourcePool;
-import com.imaginatelabs.jleaser.core.ResourcePoolException;
+import com.imaginatelabs.jleaser.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,40 +10,59 @@ import java.util.*;
 
 public class PortResourcePool implements ResourcePool {
 
-    private static final int PORT_LIMIT_FLOOR = 1;
-    private static final int PORT_LIMIT_CEILING = 65536;
-
-    private static final int DYNAMIC_PORT_LIMIT_FLOOR = 49152;
-    private static final int DYNAMIC_PORT_LIMIT_CEILING = PORT_LIMIT_CEILING;
-
+    private Logger log = LoggerFactory.getLogger(this.getClass());
     private Map<String, Lease> pool = new HashMap<String, Lease>();
-    private Logger log = LoggerFactory.getLogger(PortResourcePool.class);
-    private Random rand = new Random();
 
-    public PortResourcePool() {
+
+    public PortResourcePool(JLeaserConfiguration configuration) {
+        initialize(configuration);
+    }
+
+    private void initialize(JLeaserConfiguration configuration) {
+        List<String> includedPorts = configuration.getIncludedPorts();
+        List<String> excludedPorts = configuration.getExcludedPorts();
+        log.trace("Initializing {} Configuration", this.getClass().getSimpleName());
+        if(includedPorts.size() > 0){
+            for(int i = PortValidator.FULL_PORT_LIMIT_FLOOR; i < PortValidator.FULL_PORT_LIMIT_CEILING; ++i){
+                String port = Integer.toString(i);
+                log.trace("Locking Port: {}", port);
+                pool.put(port,new Lease(new PortResource(port),false));
+            }
+
+            for(String port: includedPorts){
+                log.trace("Unlocking Port: {}", port);
+                pool.get(port).setEnabledLeasing(true);
+            }
+        }else if(excludedPorts.size() > 0){
+            for(String port : excludedPorts){
+                pool.put(port,new Lease(new PortResource(port),false));
+            }
+        }
     }
 
     @Override
     public int getPoolSize() {
-        return PORT_LIMIT_CEILING - pool.size();
+        return PortValidator.FULL_PORT_LIMIT_CEILING - pool.size();
     }
 
     @Override
     public int getPoolLimit() {
-        return PORT_LIMIT_CEILING;
+        return PortValidator.FULL_PORT_LIMIT_CEILING;
     }
 
     @Override
     public Resource acquireLeaseForResource(String configId) throws ResourcePoolException {
-        //TODO Implement leasing from a port range #6
-        configId = parsePort(configId);
-        Lease lease = pool.get(configId);
+        String port = getDynamicPort(PortValidator.parsePortString(configId));
+        Lease lease = pool.get(port);
         if (lease == null) {
-            lease = new Lease(new PortResource(configId));
-            pool.put(configId, lease);
+            lease = new Lease(new PortResource(port));
+            pool.put(port, lease);
         } else {
+            if(!lease.isEnabledLeasing()){
+                throw new ResourcePoolException("The resource Port: %s is excluded from the leasing pool", lease.getResource().getConfigId());
+            }
             while (lease.hasLease()) {
-                log.debug("Waiting for lease on port: %s", configId);
+                log.info("Waiting for lease on port: {}", port);
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -58,49 +74,8 @@ public class PortResourcePool implements ResourcePool {
         return lease.getResource();
     }
 
-    private String parsePort(String configId) throws PortRangeOutOdBoundsException, PortNumberParseException {
-        try {
-            if (configId.matches("\\*")) {
-                return getDynamicPort(DYNAMIC_PORT_LIMIT_FLOOR,DYNAMIC_PORT_LIMIT_CEILING);
-            } else if (configId.matches("\\d{1,5}-\\d{1,5}")){
-                String[] range = configId.split("-");
-
-                int floor = Integer.parseInt(range[0]);
-                int ceiling = Integer.parseInt(range[1]);
-
-                validatePortWithinRange(floor);
-                validatePortWithinRange(ceiling);
-
-                if(floor > ceiling){
-                    throw new PortRangeOutOdBoundsException(
-                            "Port range is invalid %s - range floor %d is larger than range ceiling %d",
-                            configId,
-                            floor,
-                            floor
-                    );
-                }
-                return getDynamicPort(floor,ceiling);
-
-            } else if(configId.matches("\\d*")) {
-                validatePortWithinRange(Integer.parseInt(configId));
-                return configId;
-            }
-        } catch (NumberFormatException e) { }
-        throw new PortNumberParseException("Port '%s' is not a valid port string", configId);
-    }
-
-    private void validatePortWithinRange(int port) throws PortRangeOutOdBoundsException {
-        if (!(port > PORT_LIMIT_FLOOR && port < PORT_LIMIT_CEILING)) {
-            throw new PortRangeOutOdBoundsException(
-                    "Port %d does not fall between %d and %d",
-                    port,
-                    PORT_LIMIT_FLOOR,
-                    PORT_LIMIT_CEILING);
-        }
-    }
-
-    private String getDynamicPort(int floor, int ceiling) {
-        for (int dynamicPort = floor; dynamicPort <= ceiling ; ++dynamicPort) {
+    private String getDynamicPort(PortRange portRange) {
+        for (int dynamicPort = portRange.getFloor(); dynamicPort <= portRange.getCeiling() ; ++dynamicPort) {
             String portStr = Integer.toString(dynamicPort);
             //Try to reuse a previously leased port
             if (pool.containsKey(portStr)) {
@@ -112,7 +87,7 @@ public class PortResourcePool implements ResourcePool {
             }
         }
         //This will return the port from the start which you will now need to wait for a lease to become available
-        return Integer.toString(DYNAMIC_PORT_LIMIT_FLOOR);
+        return Integer.toString(portRange.getFloor());
     }
 
     @Override
@@ -133,25 +108,5 @@ public class PortResourcePool implements ResourcePool {
     }
 
     @Override
-    public void update() {
-        List<String> preAllocatedPorts = getPreAllocatedPorts();
-        for (String port : preAllocatedPorts) {
-            Lease lease = new Lease(new PortResource(port, true));
-            lease.takeLease();
-            pool.put(port, lease);
-        }
-    }
-
-    public List<String> getPreAllocatedPorts() {
-        List<String> ports = new ArrayList<String>();
-        for (int port = PORT_LIMIT_FLOOR; port < PORT_LIMIT_CEILING; port++) {
-            try {
-                ServerSocket serverSocket = new ServerSocket(port);
-                serverSocket.close();
-            } catch (IOException e) {
-                ports.add(Integer.toString(port));
-            }
-        }
-        return ports;
-    }
+    public void update() { }
 }
