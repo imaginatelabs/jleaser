@@ -1,0 +1,19 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="MacOsx" verbose="1" >
+
+    <test name="MacOsx" >
+        <groups>
+            <run>
+                <exclude name="nonThreadSafe"/>
+                <exclude name="integration"/>
+                <exclude name="dependsOnDocker"/>
+                <exclude name="dependsOnOs"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="com.imaginatelabs.jleaser.*"/>
+        </packages>
+    </test>
+
+</suite>

@@ -1,34 +1,47 @@
 package com.imaginatelabs.jleaser.core;
 
+import com.imaginatelabs.jleaser.docker.DockerConfiguration;
+import com.imaginatelabs.jleaser.docker.DockerContainerConfiguration;
+import com.imaginatelabs.jleaser.docker.DockerContainerConfigurationNotFoundException;
 import com.imaginatelabs.jleaser.port.PortNumberParseException;
 import com.imaginatelabs.jleaser.port.PortRange;
 import com.imaginatelabs.jleaser.port.PortRangeOutOdBoundsException;
 import com.imaginatelabs.jleaser.port.PortValidator;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class JLeaserConfiguration {
+
+    public DockerConfiguration getDockerConfiguration() {
+        return dockerConfiguration;
+    }
 
     private enum FavouredPortRule {
         INCLUDED, EXCLUDED;
     }
 
+    private Logger log = LoggerFactory.getLogger(this.getClass());
+
     private XMLConfiguration xml;
+
+    //PORTS
     private FavouredPortRule favouredPortRulePortRules = FavouredPortRule.INCLUDED;
     private List<String> excludedPorts = new ArrayList<String>();
     private List<String> includedPorts = new ArrayList<String>();
-    private Logger log = LoggerFactory.getLogger(this.getClass());
+
+    //DOCKER
+    private DockerConfiguration dockerConfiguration;
+    private Map<String, DockerContainerConfiguration> dockerContainerConfiguration = new HashMap<String, DockerContainerConfiguration>();
 
 
-    public JLeaserConfiguration(String file) throws ConfigurationException, PortNumberParseException, PortRangeOutOdBoundsException {
+    public JLeaserConfiguration(String file) throws JLeaserException {
         try {
             xml = new XMLConfiguration(file);
+
+            //TODO Create Port Configuration Class
             this.favouredPortRulePortRules = parseFavourPortRule();
             this.includedPorts.addAll(parseIncludedPorts());
             this.excludedPorts.addAll(parseExcludedPorts());
@@ -37,9 +50,17 @@ public class JLeaserConfiguration {
             } else {
                 mergePortRules(includedPorts, excludedPorts);
             }
+
+            //Docker
+            dockerConfiguration = parseDockerConfiguration();
+
         }catch(ConfigurationException e){
             log.info("Using default configuration, no configuration file named 'jleaser.config' found on the class path.");
         }
+    }
+
+    private DockerConfiguration parseDockerConfiguration() throws JLeaserException {
+        return new DockerConfiguration().withContainersFromXml(xml.configurationsAt("docker.containers.container"));
     }
 
     private void mergePortRules(List<String> primaryPorts, List<String> secondaryPorts) {
@@ -91,5 +112,9 @@ public class JLeaserConfiguration {
 
     public List<String> getIncludedPorts() {
         return includedPorts;
+    }
+
+    public DockerContainerConfiguration getDockerContainerConfiguration(String configId) throws DockerContainerConfigurationNotFoundException {
+        return this.dockerConfiguration.getDockerContainerConfiguration(configId);
     }
 }

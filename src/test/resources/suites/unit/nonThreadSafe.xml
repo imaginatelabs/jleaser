@@ -1,0 +1,16 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="NonThreadSafe" verbose="1" >
+
+    <test name="NonThreadSafe" >
+        <groups>
+            <run>
+                <include name="nonThreadSafe" />
+            </run>
+        </groups>
+        <packages>
+            <package name="com.imaginatelabs.jleaser.*"/>
+        </packages>
+    </test>
+
+</suite>

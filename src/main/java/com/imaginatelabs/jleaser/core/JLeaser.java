@@ -41,12 +41,12 @@ public class JLeaser {
         }
     }
 
-    private void initializeConfiguration() throws ConfigurationException, PortNumberParseException, PortRangeOutOdBoundsException {
+    private void initializeConfiguration() throws JLeaserException {
         log.trace("Initialising Jleaser configuration");
         config = new JLeaserConfiguration("jleaser.config");
         resourcePools = new HashMap<Class, ResourcePool>(){{
             put(LocalhostResource.class,new LocalhostResourcePool());
-            put(DockerResource.class, new DockerResourcePool());
+            put(DockerResource.class, new DockerResourcePool(config.getDockerConfiguration()));
             put(PortResource.class, new PortResourcePool(config));
         }};
     }
@@ -90,6 +90,10 @@ public class JLeaser {
 
     public static Resource getLeaseOnPort(String portNumber) throws JLeaserException {
         return getLeaseOn("port", portNumber);
+    }
+
+    public static Resource getLeaseOnDockerInstance(String configId) throws JLeaserException {
+        return getLeaseOn("docker", configId);
     }
 
     public static void returnLease(Resource resource) throws JLeaserException {

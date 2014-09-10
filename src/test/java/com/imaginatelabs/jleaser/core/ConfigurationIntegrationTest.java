@@ -1,6 +1,8 @@
 package com.imaginatelabs.jleaser.core;
 
 import com.imaginatelabs.jleaser.TestUtils;
+import com.imaginatelabs.jleaser.docker.DockerContainerConfiguration;
+import com.imaginatelabs.jleaser.docker.DockerContainerConfigurationNotFoundException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -8,7 +10,7 @@ import java.util.List;
 
 public class ConfigurationIntegrationTest {
 
-    @Test(groups = {TestUtils.INTEGRATION})
+    @Test(groups = {TestUtils.INTEGRATION, TestUtils.DEPENDS_ON_CONFIG_FILE})
     public void shouldReadValidConfigurationFromXmlFileForPortsIncludedAndExcluded() throws Exception {
         JLeaserConfiguration config = new JLeaserConfiguration("config/jleaser.config");
 
@@ -133,6 +135,27 @@ public class ConfigurationIntegrationTest {
             new JLeaserConfiguration("foo.config");
         }catch (Exception e){
             Assert.fail();
+        }
+    }
+
+    @Test(groups = {TestUtils.INTEGRATION, TestUtils.DEPENDS_ON_CONFIG_FILE, TestUtils.DEPENDS_ON_DOCKER})
+    public void shouldReadDockerConfigCorrectly() throws Exception {
+        JLeaserConfiguration config = new JLeaserConfiguration("config/jleaser.config");
+        DockerContainerConfiguration mysqlContainerConfiguration = config.getDockerContainerConfiguration("tutum/mysql");
+        DockerContainerConfiguration mongoContainerConfiguration = config.getDockerContainerConfiguration("tutum/mongodb");
+
+        Assert.assertEquals(mysqlContainerConfiguration.getId(),"tutum/mysql");
+        Assert.assertEquals(mysqlContainerConfiguration.getBaseImage(),"tutum/mysql");
+        Assert.assertEquals(mysqlContainerConfiguration.getDefaultPoolSize(),1);
+        Assert.assertEquals(mongoContainerConfiguration.getId(),"tutum/mongodb");
+        Assert.assertEquals(mongoContainerConfiguration.getBaseImage(),"tutum/mongodb");
+        Assert.assertEquals(mongoContainerConfiguration.getDefaultPoolSize(),0);
+
+        try{
+            config.getDockerContainerConfiguration("foo/bar");
+            Assert.fail("Get Docker Container Configuration should fail when searching for a config item that doesn't exits");
+        }catch(DockerContainerConfigurationNotFoundException e){
+            Assert.assertEquals(e.getMessage(),"Configuration for a Docker container with id 'foo/bar' was not found.");
         }
     }
 }

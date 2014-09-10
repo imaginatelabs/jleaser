@@ -25,6 +25,7 @@ public class PortInclusionExclusionTest {
         that can be run with a destroy method before each test.
         http://java.dzone.com/articles/testng-run-tests-sequentially
      */
+    //TODO try using a port config class
     @Test(groups = {TestUtils.NON_THREAD_SAFE})
     public void shouldIncludeOnlyPortsToThoseSpecifiedSingularlyForIncludesConfig(@Mocked final JLeaserConfiguration config) throws Exception {
         new NonStrictExpectations(){{

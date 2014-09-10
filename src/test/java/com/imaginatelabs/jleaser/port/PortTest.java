@@ -2,8 +2,6 @@ package com.imaginatelabs.jleaser.port;
 
 import com.imaginatelabs.jleaser.TestUtils;
 import com.imaginatelabs.jleaser.core.*;
-import mockit.Mocked;
-import mockit.NonStrictExpectations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;

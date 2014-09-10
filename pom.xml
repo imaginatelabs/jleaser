@@ -8,19 +8,55 @@
     <artifactId>jleaser</artifactId>
     <name>jLeaser</name>
     <version>1.0-SNAPSHOT</version>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <unitTestSuite>unit</unitTestSuite>
+        <integrationTestSuite>integration</integrationTestSuite>
+    </properties>
     <build>
         <plugins>
+            <!-- Unit Testing -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.17</version>
-                <!-- Check this out for testing isolation -->
-                <!-- http://maven.apache.org/surefire/maven-surefire-plugin/examples/fork-options-and-parallel-execution.html -->
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                    </execution>
+                </executions>
                 <configuration>
-                    <parallel>methods</parallel>
-                    <excludedGroups>nonThreadSafe</excludedGroups>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>src/test/resources/suites/unit/${unitTestSuite}.xml</suiteXmlFile>
+                    </suiteXmlFiles>
                 </configuration>
+            </plugin>
 
+            <!-- Integration Testing -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.17</version>
+                <executions>
+                    <execution>
+                        <phase>
+                           integration-test
+                        </phase>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includes>
+                        <include>**/*IntegrationTest.java</include>
+                    </includes>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>src/test/resources/suites/integration/${integrationTestSuite}.xml</suiteXmlFile>
+                    </suiteXmlFiles>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -62,6 +98,19 @@
             <version>1.10</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java</artifactId>
+            <version>0.10.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.imaginatelabs</groupId>
+            <artifactId>jterminalexec</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
 </project>

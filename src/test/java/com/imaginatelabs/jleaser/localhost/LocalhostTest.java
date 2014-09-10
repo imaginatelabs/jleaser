@@ -1,7 +1,6 @@
 package com.imaginatelabs.jleaser.localhost;
 
 import com.imaginatelabs.jleaser.TestUtils;
-import com.imaginatelabs.jleaser.core.InvalidResourceTypeException;
 import com.imaginatelabs.jleaser.core.JLeaser;
 import com.imaginatelabs.jleaser.core.JLeaserException;
 import com.imaginatelabs.jleaser.core.Resource;
@@ -32,7 +31,7 @@ public class LocalhostTest {
         Assert.assertFalse(JLeaser.hasLease(localhost));
     }
 
-
+    //Setup for shouldBlockCreatingALeaseWhenLeaseExists
     volatile boolean blockThread = true;
 
     @Test
