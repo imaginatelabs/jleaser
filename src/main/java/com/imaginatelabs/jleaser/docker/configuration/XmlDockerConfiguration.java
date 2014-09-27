@@ -1,4 +1,4 @@
-package com.imaginatelabs.jleaser.docker;
+package com.imaginatelabs.jleaser.docker.configuration;
 
 import com.imaginatelabs.jleaser.core.JLeaserException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DockerConfiguration {
+public class XmlDockerConfiguration implements DockerConfiguration {
 
     enum Xml{
         ID("id"),
@@ -23,7 +23,7 @@ public class DockerConfiguration {
 
     private Map<String, DockerContainerConfiguration> containers = new HashMap<String, DockerContainerConfiguration>();
 
-    public DockerConfiguration withContainersFromXml(List<HierarchicalConfiguration> containers) throws JLeaserException {
+    public XmlDockerConfiguration withContainersFromXml(List<HierarchicalConfiguration> containers) throws JLeaserException {
         for(HierarchicalConfiguration container: containers)
         {
             this.containers.put(

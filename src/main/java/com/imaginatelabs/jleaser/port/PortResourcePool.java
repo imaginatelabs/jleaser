@@ -1,66 +1,50 @@
 package com.imaginatelabs.jleaser.port;
 
-import com.imaginatelabs.jleaser.core.*;
+
+import com.imaginatelabs.jleaser.core.Lease;
+import com.imaginatelabs.jleaser.core.Resource;
+import com.imaginatelabs.jleaser.core.ResourcePool;
+import com.imaginatelabs.jleaser.core.ResourcePoolException;
+import com.imaginatelabs.jleaser.port.configuration.PortConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.*;
 
 public class PortResourcePool implements ResourcePool {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
-    private Map<String, Lease> pool = new HashMap<String, Lease>();
+    private Map<String, Lease> portLeasePool = new HashMap<String, Lease>();
+    private PortConfiguration portConfiguration;
 
-
-    public PortResourcePool(JLeaserConfiguration configuration) {
-        initialize(configuration);
+    public PortResourcePool(PortConfiguration portConfiguration) {
+        this.portConfiguration = portConfiguration;
     }
 
-    private void initialize(JLeaserConfiguration configuration) {
-        List<String> includedPorts = configuration.getIncludedPorts();
-        List<String> excludedPorts = configuration.getExcludedPorts();
-        log.trace("Initializing {} Configuration", this.getClass().getSimpleName());
-        if(includedPorts.size() > 0){
-            for(int i = PortValidator.FULL_PORT_LIMIT_FLOOR; i < PortValidator.FULL_PORT_LIMIT_CEILING; ++i){
-                String port = Integer.toString(i);
-                log.trace("Locking Port: {}", port);
-                pool.put(port,new Lease(new PortResource(port),false));
-            }
-
-            for(String port: includedPorts){
-                log.trace("Unlocking Port: {}", port);
-                pool.get(port).setEnabledLeasing(true);
-            }
-        }else if(excludedPorts.size() > 0){
-            for(String port : excludedPorts){
-                pool.put(port,new Lease(new PortResource(port),false));
+    @Override
+    public int getLeaseCount() {
+        int count = 0;
+        for(Lease lease: portLeasePool.values()){
+            if(lease.hasLease()){
+                ++count;
             }
         }
+        return count;
     }
 
     @Override
-    public int getPoolSize() {
-        return PortValidator.FULL_PORT_LIMIT_CEILING - pool.size();
-    }
-
-    @Override
-    public int getPoolLimit() {
-        return PortValidator.FULL_PORT_LIMIT_CEILING;
+    public int getLeaseLimit() {
+        return portConfiguration.getValidPorts().size();
     }
 
     @Override
     public Resource acquireLeaseForResource(String configId) throws ResourcePoolException {
-        String port = getDynamicPort(PortValidator.parsePortString(configId));
-        Lease lease = pool.get(port);
+        String port = getDynamicPort(PortUtils.parsePortString(configId));
+        Lease lease = portLeasePool.get(port);
         if (lease == null) {
             lease = new Lease(new PortResource(port));
-            pool.put(port, lease);
+            portLeasePool.put(port, lease);
         } else {
-            if(!lease.isEnabledLeasing()){
-                throw new ResourcePoolException("The resource Port: %s is excluded from the leasing pool", lease.getResource().getConfigId());
-            }
             while (lease.hasLease()) {
                 log.info("Waiting for lease on port: {}", port);
                 try {
@@ -75,11 +59,11 @@ public class PortResourcePool implements ResourcePool {
     }
 
     private String getDynamicPort(PortRange portRange) {
-        for (int dynamicPort = portRange.getFloor(); dynamicPort <= portRange.getCeiling() ; ++dynamicPort) {
+        for (int dynamicPort = portRange.getFloor(); dynamicPort <= portRange.getCeiling(); ++dynamicPort) {
             String portStr = Integer.toString(dynamicPort);
             //Try to reuse a previously leased port
-            if (pool.containsKey(portStr)) {
-                if (!pool.get(portStr).hasLease()) {
+            if (portLeasePool.containsKey(portStr)) {
+                if (!portLeasePool.get(portStr).hasLease()) {
                     return portStr;
                 }
             } else { //Otherwise get a fresh port
@@ -92,7 +76,7 @@ public class PortResourcePool implements ResourcePool {
 
     @Override
     public void returnLeaseForResource(Resource resource) {
-        Lease lease = pool.get(resource.getResourceId());
+        Lease lease = portLeasePool.get(resource.getResourceId());
         if (lease != null) {
             lease.returnLease();
         }
@@ -100,13 +84,10 @@ public class PortResourcePool implements ResourcePool {
 
     @Override
     public boolean hasLeaseOnResource(Resource resource) {
-        Lease lease = pool.get(resource.getResourceId());
+        Lease lease = portLeasePool.get(resource.getResourceId());
         if (lease != null) {
             return lease.hasLease();
         }
         return false;
     }
-
-    @Override
-    public void update() { }
 }

@@ -1,4 +1,4 @@
-package com.imaginatelabs.jleaser.docker;
+package com.imaginatelabs.jleaser.docker.configuration;
 
 import com.imaginatelabs.jleaser.core.JLeaserException;
 

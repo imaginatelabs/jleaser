@@ -3,7 +3,7 @@ package com.imaginatelabs.jleaser.docker;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.imaginatelabs.jleaser.TestUtils;
-import com.imaginatelabs.jterminalexec.JTerminalExec;
+import com.imaginatelabs.jleaser.docker.configuration.DockerContainerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;

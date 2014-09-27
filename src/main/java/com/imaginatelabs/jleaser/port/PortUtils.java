@@ -1,7 +1,10 @@
 package com.imaginatelabs.jleaser.port;
 
-public class PortValidator {
+import java.util.*;
 
+public class PortUtils {
+
+    public static final String ANY_PORT = "*";
     public static final String REGEX_ANY_PORT = "\\*";
     public static final String REGEX_PORT_RANGE = "\\d{1,5}-\\d{1,5}";
     public static final String REGEX_PORT_NUMBER = "\\d*";
@@ -44,12 +47,33 @@ public class PortValidator {
 
 
     public static void validatePortWithinRange(int port) throws PortRangeOutOdBoundsException {
-        if (!(port > PortValidator.FULL_PORT_LIMIT_FLOOR && port < PortValidator.FULL_PORT_LIMIT_CEILING)) {
+        if (!(port >= PortUtils.FULL_PORT_LIMIT_FLOOR && port <= PortUtils.FULL_PORT_LIMIT_CEILING)) {
             throw new PortRangeOutOdBoundsException(
                     "Port %d does not fall between %d and %d",
                     port,
-                    PortValidator.FULL_PORT_LIMIT_FLOOR,
-                    PortValidator.FULL_PORT_LIMIT_CEILING);
+                    PortUtils.FULL_PORT_LIMIT_FLOOR,
+                    PortUtils.FULL_PORT_LIMIT_CEILING);
         }
+    }
+
+    public static List<String> parsePorts(String[] portStrings) throws PortNumberParseException, PortRangeOutOdBoundsException {
+        List<PortRange> portRanges = new ArrayList<PortRange>();
+        for (String portString : portStrings) {
+            portRanges.add(PortUtils.parsePortString(portString));
+        }
+
+        Set<String> ports = new HashSet<String>();
+
+        for (PortRange portRange : portRanges) {
+            int port = portRange.getFloor();
+            while (port <= portRange.getCeiling()) {
+                String portString = Integer.toString(port);
+               ports.add(portString);
+                ++port;
+            }
+        }
+        ArrayList<String> portString = new ArrayList<String>(ports);
+        Collections.sort(portString);
+        return portString;
     }
 }

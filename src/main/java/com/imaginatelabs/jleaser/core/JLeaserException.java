@@ -10,7 +10,7 @@ public class JLeaserException extends Exception{
         super(e);
     }
 
-    public JLeaserException(String message, Throwable cause) {
-        super(message, cause);
+    public JLeaserException(Throwable cause,String message, Object... args) {
+        super(String.format(message,args), cause);
     }
 }

@@ -1,34 +1,26 @@
 jleaser
 =======
 
-## Running Tests
-Tests can be run as apart of the maven life cycle
-### Unit Tests
-```
-mvn test
+JLeaser is a central registry that manages exclusive leases on external resources across threads.
+ 
+##Sample Use Case 
+You have integration tests that you want to run in parallel but some of those tests require a single port 3306 (mysql). 
+Running these tests in parallel would cause race conditions causing intermittent test failures.
+
+JLeaser provides the ability to take a lease on a resource in this case port 3306. Once a lease is taken on a resources 
+all other process trying to take a lease on port 3306 will wait until the resource is free before the continue processing. 
+
+Take a lease on port 3360 
+```java
+    Resource mySqlPort = JLeaser.getLeaseOnPort("3306");
+    mySqlPort.getResourceId(); //"3306
 ```
 
-### Integration Tests
-```
-mvn verify
-```
+#Usage
 
-### Other Tests
-There are some tests that aren't included in the unit or integration tests because they are unreliable or are platform
-dependant.
-
-#### Unit
-- nonThreadSafe: these test need to be run sequentially
-
-```
-mvn test -DunitTestSuite=nonThreadSafe
-```
-
-#### Integration
-- unix: specific tests for unix platforms
-- macOsx: specific tests for Mac OSX
-- windows: specific tests for Windows
-
-```
-mvn verify -DintegrationTestSuite=unix
-```
+##Localhost
+_Coming Soon_
+##Ports
+_Coming Soon_
+##Docker
+_Coming Soon_

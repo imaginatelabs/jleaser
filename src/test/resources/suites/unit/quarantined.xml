@@ -1,10 +1,11 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 
-<suite name="Windows" verbose="1" >
-    <test name="Windows" >
+<suite name="Quarantined" verbose="1" >
+
+    <test name="Quarantined" >
         <groups>
             <run>
-                <include name="windows" />
+                <include name="quarantined" />
             </run>
         </groups>
         <packages>

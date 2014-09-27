@@ -1,11 +1,11 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 
-<suite name="NonThreadSafe" verbose="1" >
+<suite name="Quarantined" verbose="1" >
 
-    <test name="NonThreadSafe" >
+    <test name="Quarantined" >
         <groups>
             <run>
-                <include name="nonThreadSafe" />
+                <include name="quarantined" />
             </run>
         </groups>
         <packages>

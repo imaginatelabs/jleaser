@@ -12,12 +12,12 @@ public class LocalhostResourcePool implements ResourcePool {
     private Logger log = LoggerFactory.getLogger(LocalhostResourcePool.class);
 
     @Override
-    public int getPoolSize() {
+    public int getLeaseCount() {
         return localhostLease.hasLease()? 1: 0;
     }
 
     @Override
-    public int getPoolLimit() {
+    public int getLeaseLimit() {
         return 1;
     }
 
@@ -46,8 +46,4 @@ public class LocalhostResourcePool implements ResourcePool {
         return localhostLease.hasLease();
     }
 
-    @Override
-    public void update() {
-
-    }
 }

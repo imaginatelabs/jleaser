@@ -1,14 +1,11 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 
-<suite name="MacOsx" verbose="1" >
+<suite name="Integration" verbose="1" >
 
-    <test name="MacOsx" >
+    <test name="Integration" >
         <groups>
             <run>
-                <exclude name="nonThreadSafe"/>
-                <exclude name="integration"/>
-                <exclude name="dependsOnDocker"/>
-                <exclude name="dependsOnOs"/>
+                <include name="integration" />
             </run>
         </groups>
         <packages>

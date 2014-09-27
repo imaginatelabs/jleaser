@@ -5,6 +5,7 @@ import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.model.ContainerConfig;
 import com.imaginatelabs.jleaser.core.Resource;
+import com.imaginatelabs.jleaser.docker.configuration.DockerContainerConfiguration;
 
 public class DockerResource implements Resource {
 

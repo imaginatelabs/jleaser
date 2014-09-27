@@ -7,8 +7,7 @@ public class TestUtils {
 
     //Test Groups
     public static final String INTEGRATION = "integration";
-    public static final String NON_THREAD_SAFE = "nonThreadSafe";
-    public static final String DEPENDS_ON_CONFIG_FILE = "dependsOnConfigFile";
+    public static final String QUARANTINED = "quarantined";
     public static final String DEPENDS_ON_DOCKER = "dependsOnDocker";
     public static final String DEPENDS_ON_OS = "dependsOnOs";
     public static final String DOCKER = "docker";
@@ -28,11 +27,11 @@ public class TestUtils {
         }
     }
 
-    private void trace(String format, Object... arguments){
-        log.trace(format,arguments);
+    private void trace(String format, Object... arguments) {
+        log.trace(format, arguments);
     }
 
-    private void debug(String format, Object... arguments){
-        log.debug(format,arguments);
+    private void debug(String format, Object... arguments) {
+        log.debug(format, arguments);
     }
 }

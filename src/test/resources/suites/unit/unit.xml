@@ -5,10 +5,8 @@
     <test name="Unit" >
         <groups>
             <run>
-                <exclude name="nonThreadSafe"/>
+                <exclude name="quarantined"/>
                 <exclude name="integration"/>
-                <exclude name="dependsOnDocker"/>
-                <exclude name="dependsOnOs"/>
             </run>
         </groups>
         <packages>

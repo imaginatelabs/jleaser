@@ -2,14 +2,14 @@ package com.imaginatelabs.jleaser.core;
 
 public class ResourcePoolException extends JLeaserException{
     public ResourcePoolException(String message, Object... args) {
-        super(String.format(message,args));
+        super(message, args);
     }
 
-    public ResourcePoolException(Exception e) {
+    public ResourcePoolException(Throwable e) {
         super(e);
     }
 
-    public ResourcePoolException(String message, Throwable cause) {
-        super(message, cause);
+    public ResourcePoolException(Throwable cause, String message, Object... args) {
+        super(cause, message, args);
     }
 }
